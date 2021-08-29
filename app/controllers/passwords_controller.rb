@@ -17,9 +17,7 @@ class PasswordsController < ApplicationController
       end
       return
     else
-      # Decrypt the passwords
-      @key = EzCrypto::Key.with_password CRYPT_KEY, CRYPT_SALT
-      @payload = @key.decrypt64(@password.payload)
+      @payload = @password.payload
     end
 
     log_view(@password)
@@ -59,12 +57,12 @@ class PasswordsController < ApplicationController
     @password = Password.new
     @password.expire_after_days = params[:password][:expire_after_days]
     @password.expire_after_views = params[:password][:expire_after_views]
+    @password.payload = params[:password][:payload]
     @password.url_token = rand(36**16).to_s(36)
 
     create_detect_deletable_by_viewer(@password, params)
     create_detect_retrieval_step(@password, params)
 
-    @password.payload = encrypt_password(params[:password][:payload])
     @password.validate!
 
     respond_to do |format|
@@ -210,10 +208,5 @@ class PasswordsController < ApplicationController
       # DELETABLE_BY_VIEWER_PASSWORDS not enabled
       password.deletable_by_viewer = false
     end
-  end
-
-  def encrypt_password(password)
-    @key = EzCrypto::Key.with_password CRYPT_KEY, CRYPT_SALT
-    @key.encrypt64(password)
   end
 end

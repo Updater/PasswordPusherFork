@@ -1,23 +1,23 @@
+/* eslint-disable */
 // # Place all the behaviors and hooks related to the matching controller here.
 // # All this logic will automatically be available in application.js.
 // # You can use CoffeeScript in this file: http://jashkenas.github.com/coffee-script/
 
-function saveExpirations()
-{
-  days_value  = document.getElementById("password_expire_after_days").value
-  views_value = document.getElementById("password_expire_after_views").value
-  dbv         = document.getElementById("password_deletable_by_viewer")
+function saveExpirations() {
+  days_value = document.getElementById('password_expire_after_days').value
+  views_value = document.getElementById('password_expire_after_views').value
+  dbv = document.getElementById('password_deletable_by_viewer')
 
-  $.cookie('pwpush_days',  days_value, { expires: 365 });
-  $.cookie('pwpush_views', views_value, { expires: 365 });
-  $.cookie('pwpush_dbv', dbv.checked.toString(), { expires: 365 });
+  $.cookie('pwpush_days', days_value, { expires: 365 })
+  $.cookie('pwpush_views', views_value, { expires: 365 })
+  $.cookie('pwpush_dbv', dbv.checked.toString(), { expires: 365 })
 
-  e = document.getElementById("cookie-save")
-  e.innerHTML = "Saved!"
-  return true;
+  e = document.getElementById('cookie-save')
+  e.innerHTML = 'Saved!'
+  return true
 }
 
-$(document).ready(function() {
+$(document).ready(function () {
   var secret_url_clipboard = new ClipboardJS('.copy-secret-url');
   secret_url_clipboard.on('success', function(e) {
     var clipboardButton = document.getElementById("clipboard-secret-url");
@@ -29,36 +29,41 @@ $(document).ready(function() {
     e.clearSelection();
   });
 
-  var pw_clipboard = new ClipboardJS('.copy-to-clipboard');
-  pw_clipboard.on('success', function(e) {
-    var clipboardButton = document.getElementById("clipboard-button");
-    clipboardButton.innerText = "Copied!"
-    setTimeout(function() {
-          clipboardButton.innerText = "Copy to Clipboard";
-    }, 2000);
-    e.clearSelection();
-  });
+  var pw_clipboard = new ClipboardJS('.copy-to-clipboard')
+  pw_clipboard.on('success', function (e) {
+    var clipboardButton = document.getElementById('clipboard-button')
+    clipboardButton.innerText = 'Copied!'
+    setTimeout(function () {
+      clipboardButton.innerText = 'Copy to Clipboard'
+    }, 2000)
+    e.clearSelection()
+  })
 
-  days = $.cookie('pwpush_days');
-  views = $.cookie('pwpush_views');
+  var clipboard_url = new ClipboardJS('.url-to-clipboard')
+  clipboard_url.on('success', function (e) {
+    var clipboardBtn = document.getElementById('url-button')
+  })
 
-  de = document.getElementById("password_expire_after_days")
-  dr = document.getElementById("daysrange")
+  days = $.cookie('pwpush_days')
+  views = $.cookie('pwpush_views')
+
+  de = document.getElementById('password_expire_after_days')
+  dr = document.getElementById('daysrange')
   if (de) {
     if (days) {
       de.value = days
-      dr.innerHTML = days + " Days"
+      dr.innerHTML = days + ' Days'
     } else {
       showDaysValue(de.value)
     }
   }
 
-  ve = document.getElementById("password_expire_after_views")
-  vr = document.getElementById("viewsrange")
+  ve = document.getElementById('password_expire_after_views')
+  vr = document.getElementById('viewsrange')
   if (ve) {
     if (views) {
       ve.value = views
-      vr.innerHTML = views + " Views"
+      vr.innerHTML = views + ' Views'
     } else {
       showViewsValue(ve.value)
     }
@@ -66,24 +71,25 @@ $(document).ready(function() {
 
   dbv_checkbox = document.getElementById('password_deletable_by_viewer')
   dbv_check_state = $.cookie('pwpush_dbv')
-  if (dbv_checkbox) {
-    if (dbv_check_state) {
-      if (dbv_check_state == "false") {
-        dbv = false
-      } else {
-        dbv = true
-      }
-      if (dbv_checkbox.checked != dbv) {
-        dbv_checkbox.click()
-      }
+  if (dbv_check_state) {
+    if (dbv_check_state == 'false') {
+      dbv = false
+    } else {
+      dbv = true
+    }
+    if (dbv_checkbox.checked != dbv) {
+      dbv_checkbox.click()
     }
   }
-});
+})
 
-$('#password_payload').keypress(function() {
+$('#password_payload').keypress(function () {
   if ($('#password_payload').val().length > 250) {
-    noty({text: 'Passwords can be up to 250 characters maximum in length.', type: 'warning'});
+    noty({
+      text: 'Passwords can be up to 250 characters maximum in length.',
+      type: 'warning'
+    })
     $.noty.clearQueue()
-    return false;
+    return false
   }
-});
+})
