@@ -109,6 +109,7 @@ GEM
     marcel (1.0.1)
     method_source (1.0.0)
     mini_mime (1.1.1)
+    mini_portile2 (2.6.1)
     minitest (5.14.4)
     minitest-rails (5.2.0)
       minitest (~> 5.10)
@@ -120,7 +121,12 @@ GEM
       ruby-progressbar
     msgpack (1.4.2)
     nio4r (2.5.8)
+    nokogiri (1.12.3)
+      mini_portile2 (~> 2.6.1)
+      racc (~> 1.4)
     nokogiri (1.12.3-x86_64-darwin)
+      racc (~> 1.4)
+    nokogiri (1.12.3-x86_64-linux)
       racc (~> 1.4)
     oj (3.13.2)
     pg (0.21.0)
@@ -231,7 +237,9 @@ GEM
       nokogiri (~> 1.8)
 
 PLATFORMS
+  ruby
   x86_64-darwin-19
+  x86_64-linux
 
 DEPENDENCIES
   bootsnap (>= 1.1.0)
@@ -258,6 +266,7 @@ DEPENDENCIES
   rack-throttle
   rack-timeout
   rails (~> 5.2.0)
+  rake (~> 13.0)
   sass-rails (~> 5.0)
   selenium-webdriver
   spring

@@ -16,7 +16,8 @@ RUN apt-get update \
       tzdata \
       yarnpkg \
       zlib1g-dev \
- && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/* \
+ && gem install bundler
 
 ARG authors
 ARG url
