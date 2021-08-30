@@ -15,7 +15,7 @@ end
 if ENV.key?('RACK_ENV')
   environment ENV['RACK_ENV']
 else
-  environment 'development'
+  environment 'production'
 end
 
 on_worker_boot do

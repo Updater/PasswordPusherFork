@@ -1,5 +1,10 @@
 class Password < ApplicationRecord
-  # attr_accessible :payload, :expire_after_days, :expire_after_views, :deletable_by_viewer
+  include Vault::EncryptedModel
+  vault_lazy_decrypt!
+
+  # attr_accessible :expire_after_days, :expire_after_views, :deletable_by_viewer
+  vault_attribute :payload
+
   has_many :views, dependent: :destroy
 
   def to_param
@@ -29,11 +34,6 @@ class Password < ApplicationRecord
   # and show the clear password
   def to_json(*args)
     attr_hash = attributes
-
-    if !expired && !payload.nil?
-      key = EzCrypto::Key.with_password CRYPT_KEY, CRYPT_SALT
-      attr_hash['payload'] = key.decrypt64(attr_hash['payload'])
-    end
 
     attr_hash['days_remaining'] = days_remaining
     attr_hash['views_remaining'] = views_remaining

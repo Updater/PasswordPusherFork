@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+env:
+  DOCKER_BUILDKIT: 1
+  IMAGE_NAME: passwordpusher
+
+jobs:
+  job-ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - name: Define version and build timestamp
+        run: |
+          echo "BUILD_TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_ENV
+          echo "VERSION=$(date -u +'%Y%m%d')-$GITHUB_RUN_NUMBER-${GITHUB_SHA:0:7}" >> $GITHUB_ENV
+          echo "PARSED_REF=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_ENV
+      - name: prepare database
+        run: bundle exec rake db:reset
+      - name: run tests
+        run: bundle exec rake test:db
+      - name: Log into registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Build and push component images
+        run: |
+          IMAGE_ID=ghcr.io/updater/${IMAGE_NAME}
+
+          docker build \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --build-arg apt_update_date=$(date -u +'%Y%m%d') \
+            --build-arg authors=$(yq eval --no-colors '.spec.owner' catalog-info.yaml) \
+            --build-arg url="https://github.com/$(yq eval --no-colors '.metadata.annotations["github.com/project-slug"]' catalog-info.yaml)" \
+            --build-arg build-timestamp=${BUILD_TIMESTAMP} \
+            --build-arg ref=${PARSED_REF} \
+            --build-arg revision=${GITHUB_SHA} \
+            --build-arg version=${VERSION} \
+            --cache-from ${IMAGE_ID}:main \
+            --tag ${IMAGE_ID}:${PARSED_REF} \
+            --tag ${IMAGE_ID}:${VERSION} \
+            .
+
+          docker image push --all-tags ${IMAGE_ID}
