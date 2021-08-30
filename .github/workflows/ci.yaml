@@ -30,7 +30,7 @@ jobs:
         run: bundle exec rake test:db
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Build and push component images
+      - name: Build and push image
         run: |
           IMAGE_ID=ghcr.io/updater/${IMAGE_NAME}
 
