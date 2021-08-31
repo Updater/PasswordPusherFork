@@ -1,7 +1,7 @@
 base: &base
   adapter: sqlite3
   timeout: 5000
-  pool: <%= ENV["DB_POOL"] || ENV['RAILS_MAX_THREADS'] || 5 %>
+  pool: <%= ENV["DATABASE_POOL"] || ENV["RAILS_MAX_THREADS"] || 5 %>
 
 development:
   database: db/development.sqlite3
@@ -13,10 +13,12 @@ test:
 
 production:
   adapter: postgresql
-  database: <%= ENV['PWPUSH_DB_NAME'] %>
-  username: <%= ENV['PWPUSH_DB_USERNAME'] %>
-  password: <%= ENV['PWPUSH_DB_PASSWORD'] %>
-  pool: 5
-  timeout: 5000
+  database: <%= ENV["DATABASE_NAME"] %>
   encoding: utf8
+  host: <%= ENV["DATABASE_HOST"] %>
+  password: <%= ENV["DATABASE_PASSWORD"] %>
+  pool: <%= (ENV["DATABASE_POOL"] || ENV["RAILS_MAX_THREADS"] || 5).to_i %>
+  port: <%= ENV["DATABASE_PORT"] %>
   reconnect: false
+  timeout: <%= (ENV["DATABASE_TIMEOUT"] || 5000).to_i %>
+  username: <%= ENV["DATABASE_USERNAME"] %>
