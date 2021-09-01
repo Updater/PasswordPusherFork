@@ -49,6 +49,13 @@ Rails.application.configure do
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
   config.force_ssl = ENV.key?('FORCE_SSL') ? true : false
 
+  config.ssl_options = {
+    hsts: false,
+    redirect: {
+      exclude: -> request { request.path =~ /readyz|livez|versionz/}
+    }
+  }
+
   # Use the lowest log level to ensure availability of diagnostic information
   # when problems arise.
   config.log_level = (ENV['LOG_LEVEL'] || 'warn').downcase.to_sym
