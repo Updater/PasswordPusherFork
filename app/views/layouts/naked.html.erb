@@ -3,7 +3,6 @@
 <head>
 
 <title>Password Pusher</title>
-<%= render :partial => "layouts/ga" if Rails.env == "production" %>
 <%= csrf_meta_tags %>
 <%= stylesheet_link_tag "application" %>
 
@@ -31,7 +30,7 @@
 </head>
 
 <body>
-<%= yield %> 
+<%= yield %>
 <%= javascript_include_tag "application"%>
 </body>
 </html>

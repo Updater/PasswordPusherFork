@@ -13,7 +13,7 @@ Vault::Rails.configure do |vault|
   # application, you will need to migrate the encrypted data to the new
   # key namespace. `vault-rails` uses ENV["VAULT_RAILS_APPLICATION"] if
   # not set here.
-  vault.application = ENV["SERVICE_NAME"] || "PasswordPusher"
+  vault.application = SERVICE_NAME
 
   vault.address = ENV["VAULT_ADDR"]
   vault.token = ENV["VAULT_TOKEN"]

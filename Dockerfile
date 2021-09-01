@@ -41,6 +41,7 @@ ENV BUILD_TIMESTAMP=$build-timestamp
 ENV VERSION=$version
 ENV PORT=80
 
+ENV FORCE_SSL=true
 ENV RACK_ENV=production
 ENV RAILS_ENV=production
 

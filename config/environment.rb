@@ -1,13 +1,29 @@
 # frozen_string_literal: true
 
+require 'opentelemetry/sdk'
 # Load the Rails application.
 require_relative 'application'
 
-PAYLOAD_INITIAL_TEXT = ENV.fetch('PAYLOAD_INITIAL_TEXT', 'Enter the Password to be Shared')
+APPLICATION_ENVIRONMENT = ENV['APPLICATION_ENVIRONMENT'] || 'unknown'
+SERVICE_NAME = ENV["SERVICE_NAME"] || "password-pusher"
+SERVICE_VERSION = ENV["VERSION"] || 'dev'
 
-# If deploying PasswordPusher yourself, you should change these CRYPT values.
-CRYPT_KEY = ENV.fetch('CRYPT_KEY', '}s-#2R0^/+2wEXc47\$9Eb')
-CRYPT_SALT = ENV.fetch('CRYPT_SALT', ',2_%4?[+:3774>f')
+OS_RELEASE_FILE = "/etc/os-release"
+
+additional_resource_attributes = OpenTelemetry::SDK::Resources::Resource.create({
+  OpenTelemetry::SemanticConventions::Resource::DEPLOYMENT_ENVIRONMENT => APPLICATION_ENVIRONMENT,
+  OpenTelemetry::SemanticConventions::Resource::HOST_NAME => ENV['HOSTNAME'] || `hostname`.strip || "unknown-host",
+  OpenTelemetry::SemanticConventions::Resource::OS_DESCRIPTION => File.readable?(OS_RELEASE_FILE) ? File.read(OS_RELEASE_FILE).strip : RUBY_PLATFORM,
+})
+
+OpenTelemetry::SDK.configure do |c|
+  c.resource = additional_resource_attributes
+  c.service_name = SERVICE_NAME
+  c.service_version = SERVICE_VERSION
+  c.use_all
+end
+
+PAYLOAD_INITIAL_TEXT = ENV.fetch('PAYLOAD_INITIAL_TEXT', 'Enter the Password to be Shared')
 
 # Controls the "Expire After Days" form settings in Password#new
 EXPIRE_AFTER_DAYS_DEFAULT = Integer(ENV.fetch('EXPIRE_AFTER_DAYS_DEFAULT', 7))
