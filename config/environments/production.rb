@@ -81,6 +81,7 @@ Rails.application.configure do
   config.active_support.deprecation = :notify
 
   config.lograge.enabled = true
+  config.lograge.formatter = Lograge::Formatters::Json.new
 
   # Use default logging formatter so that PID and timestamp are not suppressed.
   config.log_formatter = ::Logger::Formatter.new
