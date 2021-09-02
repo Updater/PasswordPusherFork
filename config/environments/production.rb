@@ -89,7 +89,7 @@ Rails.application.configure do
       dd: {
         env: APPLICATION_ENVIRONMENT,
         service: SERVICE_NAME,
-        span_id: (current_span.span_id.unpack1('H*').to_i(16).to_s if currnet_span),
+        span_id: (current_span.span_id.unpack1('H*').to_i(16).to_s if current_span),
         trace_id: (current_span.trace_id.unpack1('H*')[16, 16].to_i(16).to_s if current_span),
         version: SERVICE_VERSION,
       },
