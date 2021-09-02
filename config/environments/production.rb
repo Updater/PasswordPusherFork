@@ -82,6 +82,22 @@ Rails.application.configure do
 
   config.lograge.enabled = true
   config.lograge.formatter = Lograge::Formatters::Json.new
+  config.lograge.custom_options = lambda do |event|
+    current_span = OpenTelemetry::Trace.current_span(OpenTelemetry::Context.current).context
+
+    {
+      dd: {
+        env: APPLICATION_ENVIRONMENT,
+        service: SERVICE_NAME,
+        span_id: (current_span.span_id.unpack1('H*').to_i(16).to_s if currnet_span),
+        trace_id: (current_span.trace_id.unpack1('H*')[16, 16].to_i(16).to_s if current_span),
+        version: SERVICE_VERSION,
+      },
+      ddsource: ["ruby"],
+    }.compact
+  end
+
+  config.colorize_logging = false
 
   # Use default logging formatter so that PID and timestamp are not suppressed.
   config.log_formatter = ::Logger::Formatter.new
