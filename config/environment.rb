@@ -19,6 +19,14 @@ additional_resource_attributes = OpenTelemetry::SDK::Resources::Resource.create(
 })
 
 OpenTelemetry::SDK.configure do |c|
+  c.add_span_processor(
+    OpenTelemetry::SDK::Trace::Export::BatchSpanProcessor.new(
+      OpenTelemetry::Exporter::OTLP::Exporter.new(
+        compression: "gzip",
+        endpoint: ENV["OTEL_EXPORTER_OTLP_SPAN_ENDPOINT"],
+      )
+    )
+  )
   c.resource = additional_resource_attributes
   c.service_name = SERVICE_NAME
   c.service_version = SERVICE_VERSION
