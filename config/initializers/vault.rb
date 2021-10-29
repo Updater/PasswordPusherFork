@@ -1,5 +1,7 @@
 require "vault/rails"
 
+SERVICE_ACCOUNT_TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+
 Vault::Rails.configure do |vault|
   # Use Vault in transit mode for encrypting and decrypting data. If
   # disabled, vault-rails will encrypt data in-memory using a similar
@@ -16,5 +18,19 @@ Vault::Rails.configure do |vault|
   vault.application = SERVICE_NAME
 
   vault.address = ENV["VAULT_ADDR"]
-  vault.token = ENV["VAULT_TOKEN"]
 end
+
+if File.exist?(SERVICE_ACCOUNT_TOKEN_PATH)
+  role = ENV["VAULT_ROLE"] || SERVICE_NAME
+  json = Vault.post(
+    "/v1/auth/kubernetes/login",
+    JSON.fast_generate({role: role, jwt: File.read(SERVICE_ACCOUNT_TOKEN_PATH)})
+  )
+
+  secret = Secret.decode(json)
+  Vault.token = secret.auth.client_token
+else
+  Vault.token = ENV["VAULT_TOKEN"]
+end
+
+$VAULT_TOKEN_DATA = Vault.auth_token.lookup_self().data

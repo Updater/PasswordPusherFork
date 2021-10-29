@@ -1,8 +1,13 @@
-class OpsController < ApplicationController
-  layout false
+class OpsController < ActionController::API
+  include VaultHelper
 
   def livez
-    render plain: "OK"
+    if valid_vault_token?
+      render plain: "OK"
+    else
+      render status: 500, plain: "Internal Server Error"
+    end
+
   end
 
   def readyz
