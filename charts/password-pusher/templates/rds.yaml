@@ -1,0 +1,59 @@
+{{- $name := include "password-pusher.rdsResourcesName" . -}}
+{{- $fullName := printf "%s-%s" $name .Values.applicationEnvironment -}}
+---
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: SecurityGroup
+metadata:
+  name: {{ $fullName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: database
+    app.kubernetes.io/instance: {{ $fullName }}
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/part-of: {{ .Release.Name }}
+spec:
+  forProvider:
+    description: {{ $fullName }} access to PostgreSQL
+    groupName: {{ $fullName }}
+    ingress:
+      - fromPort: 5432
+        toPort: 5432
+        ipProtocol: tcp
+        ipRanges:
+          {{- toYaml .Values.database.ipRanges | nindent 10 }}
+    region: {{ .Values.database.region }}
+    vpcId: {{ .Values.database.vpcId }}
+  providerConfigRef:
+    name: provider-aws
+  deletionPolicy: Delete
+
+---
+apiVersion: database.aws.crossplane.io/v1beta1
+kind: RDSInstance
+metadata:
+  name: {{ $fullName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: database
+    app.kubernetes.io/instance: {{ $fullName }}
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/part-of: {{ .Release.Name }}
+spec:
+  forProvider:
+    allocatedStorage: {{ .Values.database.allocatedStorage }}
+    dbInstanceClass: {{ .Values.database.dbInstanceClass }}
+    dbName: {{ include "password-pusher.databaseName" . }}
+    dbSubnetGroupName: {{ .Values.database.dbSubnetGroupName }}
+    engine: postgres
+    engineVersion: {{ .Values.database.engineVersion }}
+    masterUsername: {{ .Values.database.masterUsername }}
+    region: {{ .Values.database.region }}
+    skipFinalSnapshotBeforeDeletion: true
+    vpcSecurityGroupIDRefs:
+      - name: {{ $fullName }}
+  writeConnectionSecretToRef:
+    namespace: {{ .Release.Namespace }}
+    name: {{ include "password-pusher.databaseConnSecretName" . }}
+  providerConfigRef:
+    name: provider-aws
+  deletionPolicy: Delete

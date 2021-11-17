@@ -7,29 +7,43 @@ on:
   pull_request:
 
 env:
+  CHART: password-pusher
   DOCKER_BUILDKIT: 1
   IMAGE_NAME: passwordpusher
+  HARBOR_HELM_REPO_URL: https://harbor.infra.updatron.com/chartrepo/updater
 
 jobs:
-  job-ci:
+  job-build-image:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
+
       - uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
+
       - name: Define version and build timestamp
         run: |
-          echo "BUILD_TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_ENV
-          echo "VERSION=$(date -u +'%Y%m%d')-$GITHUB_RUN_NUMBER-${GITHUB_SHA:0:7}" >> $GITHUB_ENV
-          echo "PARSED_REF=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_ENV
+          BRANCH_REF=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          BUILD_TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          FORMATTED_BRANCH_REF=$(echo $BRANCH_REF | sed 's/[^a-zA-Z0-9]/-/g')
+          VERSION=$(date -u +'%Y%m%d')-$GITHUB_RUN_NUMBER-${GITHUB_SHA:0:7}
+
+          echo "BRANCH_REF=$BRANCH_REF" >> $GITHUB_ENV
+          echo "BUILD_TIMESTAMP=$BUILD_TIMESTAMP" >> $GITHUB_ENV
+          echo "FORMATTED_BRANCH_REF=$FORMATTED_BRANCH_REF" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: prepare database
         run: bundle exec rake db:reset
+
       - name: run tests
         run: bundle exec rake test:db
+
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
       - name: Build and push image
         run: |
           IMAGE_ID=ghcr.io/updater/${IMAGE_NAME}
@@ -38,14 +52,68 @@ jobs:
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --build-arg apt_update_date=$(date -u +'%Y%m%d') \
             --build-arg authors=$(yq eval --no-colors '.spec.owner' catalog-info.yaml) \
-            --build-arg url="https://github.com/$(yq eval --no-colors '.metadata.annotations["github.com/project-slug"]' catalog-info.yaml)" \
-            --build-arg build-timestamp=${BUILD_TIMESTAMP} \
-            --build-arg ref=${PARSED_REF} \
+            --build-arg buildtimestamp=${BUILD_TIMESTAMP} \
+            --build-arg description=$(yq eval --no-colors '.spec.description' catalog-info.yaml) \
+            --build-arg ref=${BRANCH_REF} \
             --build-arg revision=${GITHUB_SHA} \
+            --build-arg title=$(yq eval --no-colors '.spec.title' catalog-info.yaml) \
+            --build-arg url="https://github.com/$(yq eval --no-colors '.metadata.annotations["github.com/project-slug"]' catalog-info.yaml)" \
             --build-arg version=${VERSION} \
             --cache-from ${IMAGE_ID}:main \
-            --tag ${IMAGE_ID}:${PARSED_REF} \
+            --tag ${IMAGE_ID}:${FORMATTED_BRANCH_REF} \
+            --tag ${IMAGE_ID}:${FORMATTED_BRANCH_REF}-${VERSION} \
             --tag ${IMAGE_ID}:${VERSION} \
             .
 
           docker image push --all-tags ${IMAGE_ID}
+
+  job-build-chart:
+      runs-on: ubuntu-latest
+
+      steps:
+        - uses: actions/checkout@v2
+
+        - name: Check if chart changed
+          uses: Updater/paths-filter@v2
+          id: changes
+          with:
+            filters: |
+              chart:
+                - 'charts/**'
+
+        - name: install helm
+          if: steps.changes.outputs.chart == 'true'
+          run: |
+            curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+            helm plugin install https://github.com/chartmuseum/helm-push
+
+        - name: cache helm
+          if: steps.changes.outputs.chart == 'true'
+          uses: actions/cache@v2
+          with:
+            path: |
+              /usr/local/bin/helm
+            key: helm-${{ runner.os }}-${{ hashFiles('/usr/local/bin/helm') }}
+            restore-keys: |
+              helm-${{ runner.os }}
+
+        - name: build and push chart
+          if: steps.changes.outputs.chart == 'true'
+          working-directory: './charts'
+          run: |
+            helm repo add --insecure-skip-tls-verify --username=${{ secrets.HARBOR_USERNAME }} --password=${{ secrets.HARBOR_PASSWORD }} harbor $HARBOR_HELM_REPO_URL
+
+            CURRENT_CHART_VERSION=`yq e '.version' charts/${CHART}/Chart.yaml`
+            LATEST_CHART_VERSION=`helm search repo harbor/${CHART} | awk 'FNR==2{print $2}'`
+
+            # If no published chart version or if the current committed major version is higher, then use the committed version
+            function version_gt() { test "$(echo "$@" | tr " " "\n" | sort -V | head -n 1)" != "$1"; }
+            if [ -z ${LATEST_CHART_VERSION} ] || version_gt ${CURRENT_CHART_VERSION} ${LATEST_CHART_VERSION}; then
+              NEW_CHART_VERSION=${CURRENT_CHART_VERSION}
+            else
+              NEW_CHART_VERSION=`echo "${LATEST_CHART_VERSION}" | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g'`
+            fi
+
+            helm dependency update ${CHART}
+            helm package --version ${NEW_CHART_VERSION} $CHART}
+            helm cm-push ${CHART}-${CHART_VERSION} harbor
