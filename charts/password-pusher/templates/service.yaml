@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "password-pusher.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "password-pusher.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "password-pusher.selectorLabels" . | nindent 4 }}

@@ -21,14 +21,14 @@ RUN apt-get update \
 
 ARG authors
 ARG url
-ARG build-timestamp
+ARG buildtimestamp
 ARG ref
 ARG revision
 ARG version
 
 LABEL org.opencontainers.image.authors="$authors"
 LABEL org.opencontainers.image.base.name="docker.io/library/ruby:$NGINX_IMAGE_TAG"
-LABEL org.opencontainers.image.created="$build-timestamp"
+LABEL org.opencontainers.image.created="$buildtimestamp"
 LABEL org.opencontainers.image.description="Updater's Password Pusher service"
 LABEL org.opencontainers.image.ref.name="$ref"
 LABEL org.opencontainers.image.revision="$revision"
@@ -37,7 +37,7 @@ LABEL org.opencontainers.image.url="$url"
 LABEL org.opencontainers.image.vendor="Updater"
 LABEL org.opencontainers.image.version="$version"
 
-ENV BUILD_TIMESTAMP=$build-timestamp
+ENV BUILD_TIMESTAMP=$buildtimestamp
 ENV VERSION=$version
 ENV PORT=80
 

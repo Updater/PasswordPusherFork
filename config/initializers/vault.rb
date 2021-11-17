@@ -1,6 +1,7 @@
 require "vault/rails"
 
 SERVICE_ACCOUNT_TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+VAULT_APPLICATION = "#{SERVICE_NAME}-#{APPLICATION_ENVIRONMENT}"
 
 Vault::Rails.configure do |vault|
   # Use Vault in transit mode for encrypting and decrypting data. If
@@ -15,13 +16,13 @@ Vault::Rails.configure do |vault|
   # application, you will need to migrate the encrypted data to the new
   # key namespace. `vault-rails` uses ENV["VAULT_RAILS_APPLICATION"] if
   # not set here.
-  vault.application = SERVICE_NAME
+  vault.application = VAULT_APPLICATION
 
   vault.address = ENV["VAULT_ADDR"]
 end
 
 if File.exist?(SERVICE_ACCOUNT_TOKEN_PATH)
-  role = ENV["VAULT_ROLE"] || SERVICE_NAME
+  role = ENV["VAULT_ROLE"] || VAULT_APPLICATION
   json = Vault.post(
     "/v1/auth/kubernetes/login",
     JSON.fast_generate({role: role, jwt: File.read(SERVICE_ACCOUNT_TOKEN_PATH)})

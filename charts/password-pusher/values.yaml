@@ -1,0 +1,48 @@
+---
+applicationEnvironment: ""
+
+applicationSubdomain: tools.updatron.com
+
+database:
+  allocatedStorage: 20
+  dbInstanceClass: db.t2.micro
+  dbSubnetGroupName: secure-infra-vpc-rds-subnet-group
+  engineVersion: "12"
+  ipRanges:
+    - cidrIp: "10.0.0.0/8"
+      description: private IP space
+    - cidrIp: "64.94.9.249/32"
+      description: office IP
+    - cidrIp: "66.231.225.7/32"
+      description: office IP
+    - cidrIp: "172.20.0.0/16"
+      description: private IP space
+  masterUsername: root
+  region: us-east-1
+  vpcId: vpc-7a107503
+
+image:
+  # TODO migrate to harbor:
+  # repository: harbor.infra.updatron.com/updater/passwordpusher
+  repository: ghcr.io/updater/passwordpusher
+  tag: ""
+
+imagePullSecrets:
+  - ghcr-image-pull-secret
+
+ingress:
+  className: "tools-alb"
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /livez
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
+    alb.ingress.kubernetes.io/target-type: ip
+
+replicaCount: 1
+
+resources:
+  limits:
+    memory: 256M
+  requests:
+    cpu: 1
+    memory: 256M

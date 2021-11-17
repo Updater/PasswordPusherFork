@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "password-pusher.fullname" . }}
+  labels:
+    {{- include "password-pusher.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "password-pusher.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "password-pusher.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          env:
+            - name: APPLICATION_ENVIRONMENT
+              value: {{ .Values.applicationEnvironment }}
+            - name: DATABASE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "password-pusher.databaseConnSecretName" . }}
+                  key: endpoint
+            - name: DATABASE_NAME
+              value: {{ include "password-pusher.databaseName" . }}
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "password-pusher.databaseConnSecretName" . }}
+                  key: password
+            - name: DATABASE_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "password-pusher.databaseConnSecretName" . }}
+                  key: port
+            - name: DATABASE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "password-pusher.databaseConnSecretName" . }}
+                  key: username
+            - name: DD_ENV
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/env']
+            - name: DD_SERVICE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/service']
+            - name: DD_VERSION
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/version']
+            - name: DEPLOY_TIMESTAMP
+              value: {{ now | date "2006-01-02T15:04:05Z" }}
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: OTEL_EXPORTER_OTLP_SPAN_ENDPOINT
+              value: "http://$(HOST_IP):55681/v1/traces"
+            - name: OTEL_EXPORTER_OTLP_SPAN_INSECURE
+              value: "true"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "k8s.pod.ip=$(MY_POD_IP)"
+            - name: OTEL_RUBY_EXPORTER_OTLP_SSL_VERIFY_NONE
+              value: "true"
+            - name: PORT
+              value: "3000"
+            - name: SERVICE_NAME
+              value: {{ include "password-pusher.name" }}
+            - name: VAULT_ADDR
+              value: {{ .Values.vaultAddress }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /livez
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 3
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /readyz
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 3
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

@@ -1,11 +1,11 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: backstage
+  name: PasswordPusher
   description: Updater's Password Pusher application.
   annotations:
     github.com/project-slug: Updater/PasswordPusher
-    backstage.io/techdocs-ref: url:https://github.com/Updater/PasswordPusher
+    backstage.io/techdocs-ref: dir:.
 spec:
   type: website
   owner: group:devops
